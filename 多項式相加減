@@ -1,0 +1,207 @@
+#include <iostream>
+#include <cstdlib>
+#include <string.h>
+#include <cmath> 
+using namespace std;
+
+//定義 POLYN 為 struct polynomial 的縮寫
+typedef struct polynomial
+{
+	int coef;			//coefficient
+	int exp;			//exponent
+}POLYN;
+
+//declare function prototype 聲明函數原型
+void Input(int, int, POLYN[], char *);			//input function
+void swap(POLYN *, POLYN *);
+void sort_poly(POLYN[], int, int);
+void print_poly(POLYN[], int, int, char *);
+void poly_plus(POLYN[], int, int, int, int, int, char *);
+
+int main()
+{
+	int a_s, a_f;			//a_s 為 A 多項式開始的位置，a_f 為 A 多項式結束的位置 
+	int b_s, b_f;			//b_s 為 B 多項式開始的位置，b_f 為 B 多項式結束的位置 
+	char op_choice;			//選擇 + 或 -
+	char *name=new char[10];			//用來列印多項式名稱
+	POLYN poly[30];			//假設最多 30 個多項式
+	
+	cout << "請輸入多項式 A 和多項式 B 的項數: \n";
+	cin >> a_f;			//array A 的個數
+	cin >> b_f;			//array B 的個數
+	cout << endl;
+	
+	//底下設定 a_s, a_f, b_s 與 b_f
+	a_s = 0;			//陣列 A 的起始位置在 0 
+	b_s = a_f--;			//設置陣列 B 的開始在 A 的 finish-1 並且設置 A'finish 為 A 的個數減 1，b_s = a_f; a_f--; 
+	b_f += a_f;			//b_f = b_f + a_f; 設置陣列 B 的結束
+	
+	strcpy(name, " A");
+	Input(a_s, a_f, poly, name);			//使用者輸入 A 的各項
+	strcpy(name, " B");
+	Input(b_s, b_f, poly, name);			//input items for B by users
+	
+	strcpy(name, " A - B ");					//for print out title
+	poly_plus(poly, a_s, b_s, a_f, b_f, -1, name);
+	strcpy(name, " A + B ");					//for print out title
+	poly_plus(poly, a_s, b_s, a_f, b_f, 1, name);
+	system("pause");
+	return 0;
+}
+
+void poly_plus(POLYN poly[], int a_s, int b_s, int a_f, int b_f, int op_sign, char *name)
+{
+	int i = a_s, j = b_s;
+	int avail = b_f + 1;			//poly[] 可用空格處
+	for( ; i <= a_f && j <= b_f; avail++)
+	{
+		if(poly[i].exp == poly[j].exp)			//冪次相同 
+		{
+			if(op_sign < 0)			//相減 
+			{
+				poly[avail].coef = poly[i].coef - poly[j].coef;			//A 該項係數減掉 B 該項係數，存入 [avail].coef
+				poly[avail].exp = poly[i].exp;			//因冪次相同，選擇將 A 的冪次或是 B 的冪次存入 [avail].exp 
+				i++;			//A 多項式跳下一格判斷 
+				j++;			//B 多項式跳下一格判斷 
+			}
+			else			//相加 (op_sign > 0)
+			{
+				poly[avail].coef = poly[i].coef + poly[j].coef;			//A 該項係數加上 B 該項係數，存入 [avail].coef
+				poly[avail].exp = poly[i].exp;			//因冪次相同，選擇將 A 的冪次或是 B 的冪次存入 [avail].exp
+				i++;			//A 多項式跳下一格判斷
+				j++;			//B 多項式跳下一格判斷
+			}
+		}
+		else if(poly[i].exp > poly[j].exp)			//A 該項冪次大於 B 該項冪次 
+		{
+			poly[avail].coef = poly[i].coef;			//A 該項係數存入 [avail].coef 
+			poly[avail].exp = poly[i].exp;			//A 該項冪次存入 [avail].exp
+			i++;			//A 多項式跳下一格判斷
+		}
+		else
+		{
+			if(poly[j].coef > 0 && op_sign < 0)			//因 op_sign < 0，為 A - B
+			{
+				poly[j].coef *= -1;			//若 B 該項係數為正，則相減後變為負 
+				poly[avail].coef = poly[j].coef;			//B 該項係數存入 [avail].coef
+				poly[avail].exp = poly[j].exp;			//B 該項冪次存入 [avail].exp
+				j++;			//B 多項式跳下一格判斷
+			}
+			else if(poly[j].coef < 0 && op_sign < 0)			//因 op_sign < 0，為 A - B
+			{
+				poly[j].coef = abs(poly[j].coef);			//若 B 該項係數為負，則相減後變為正，將 B 該項係數加上絕對值 
+				poly[avail].coef = poly[j].coef;			//B 該項係數存入 [avail].coef
+				poly[avail].exp = poly[j].exp;			//B 該項冪次存入 [avail].exp
+				j++;			//B 多項式跳下一格判斷
+			}
+			else
+			{
+				poly[j].coef *= -1;			//因先做 A - B，此時 B 該項係數已改變，將其乘以 -1 以還原該系數正負號 
+				poly[avail].coef = poly[j].coef;			//B 該項係數存入 [avail].coef
+				poly[avail].exp = poly[j].exp;			//B 該項冪次存入 [avail].exp
+				j++;
+			}
+		}
+	}
+	while(i <= a_f)			//A 多項式還有剩餘的未判斷 
+	{
+		poly[avail].coef = poly[i].coef;			//A 該項係數存入 [avail].coef
+		poly[avail].exp = poly[i].exp;			//A 該項冪次存入 [avail].exp
+		avail++;			//可用空格處跳下一格 
+		i++;			//A 多項式跳下一格判斷
+	}
+	while(j <= b_f)			//B 多項式還有剩餘的未判斷
+	{
+		if(poly[j].coef > 0 && op_sign < 0)			//因 op_sign < 0，為 A - B
+		{
+			poly[j].coef *= -1;			//若 B 該項係數為正，則相減後變為負
+			poly[avail].coef = poly[j].coef;			//B 該項係數存入 [avail].coef
+			poly[avail].exp = poly[j].exp;			//B 該項冪次存入 [avail].exp
+			avail++;			//可用空格處跳下一格
+			j++;			//B 多項式跳下一格判斷
+		}
+		else if(poly[j].coef < 0 && op_sign < 0)			//因 op_sign < 0，為 A - B
+		{
+			poly[j].coef = abs(poly[j].coef);			//若 B 該項係數為負，則相減後變為正，將 B 該項係數加上絕對值
+			poly[avail].coef = poly[j].coef;			//B 該項係數存入 [avail].coef
+			poly[avail].exp = poly[j].exp;			//B 該項冪次存入 [avail].exp
+			avail++;			//可用空格處跳下一格
+			j++;			//B 多項式跳下一格判斷
+		}
+		else			//因 op_sign > 0，為 A + B
+		{
+			poly[j].coef *= -1;			//因先做 A - B，此時 B 該項係數已改變，將其乘以 -1 以還原該系數正負號
+			poly[avail].coef = poly[j].coef;			//B 該項係數存入 [avail].coef
+			poly[avail].exp = poly[j].exp;			//B 該項冪次存入 [avail].exp
+			avail++;			//可用空格處跳下一格
+			j++;			//B 多項式跳下一格判斷
+		}
+	}
+	print_poly(poly, b_f + 1, avail, name);
+}
+void print_poly(POLYN poly[], int start, int finish, char *name)
+{
+	cout << "\n多項式" << name << " = ";
+	sort_poly(poly, start, finish);			//需降冪排序才能往下判斷 
+	for(int i = start; i < finish; i++)			//從頭開始印出來 
+	{
+		if(i != start && poly[i].coef > 0)
+		{
+			cout << "+";			//不是第一項且係數大於 0，則列印加號 
+		}
+		else if(poly[i].coef == 0)
+		{
+			continue;			//係數為 0 則不印出來 
+		}
+		if(poly[i].exp == 0)
+		{
+			cout << poly[i].coef;			//冪次為 0，則只印出係數 
+		}
+		else if(poly[i].coef == 1)
+		{
+			cout << "X^" <<poly[i].exp;			//若係數為 1 則印出 X 及冪次即可 
+		}
+		else if(poly[i].coef)
+		{
+			cout << poly[i].coef << "X^" << poly[i].exp;			//其餘的直接印 
+		}
+	}
+	cout << "\n\n";
+}
+
+void Input(int start, int end, POLYN arr[], char *name)			//input function
+{
+	for(int i = start, j = 1; i <= end; ++i, j++)
+	{
+		cout << "請輸入多項式" << name << "的第" << j << "項的係數: ";
+		cin >> arr[i].coef;
+		cout << "請輸入多項式" << name << "的第" << j << "項的冪數: ";
+		cin >> arr[i].exp;
+	}
+	print_poly(arr, start, end + 1, name);			//print_poly: 列印多項式
+}
+
+void sort_poly(POLYN poly[], int start, int finish)			//sort_poly: 如果輸入的冪次沒有由大到小排列，進行排序
+{
+	for(int i = start, max; i < finish; i++)			//quick sort
+	{
+		max = i;
+		for(int j = i + 1; j < finish; j++)
+		{
+			if(poly[max].exp < poly[j].exp)
+			{
+				max = j;
+			}
+		}
+		if(max != i)
+		{
+			swap(&poly[max], &poly[i]);
+		}
+	}
+} 
+
+void swap(POLYN *a, POLYN *b)			//兩個項目對換 
+{
+	a->coef ^= b->coef ^= a->coef ^= b->coef;
+	a->exp ^= b->exp ^= a->exp ^= b->exp;
+}
